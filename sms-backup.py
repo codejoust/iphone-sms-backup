@@ -20,8 +20,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import sys
+py   = sys.version_info
+py3k = py >= (3,0,0)
+py25 = py <  (2,6,0)
+
+if py3k:
+  bytes = str
+  import io
+else:
+  unicode = str
+  import cStringIO
+
 import csv
-import cStringIO
 import fnmatch
 import json
 import logging
@@ -34,6 +45,9 @@ import tempfile
 
 from datetime import datetime
 
+def decode_str(s):
+    return s.decode(enc, err) if isinstance(s, bytes) else unicode(s)
+
 # argparse isn't in standard library until 2.7
 try:
     test = argparse.ArgumentParser()
@@ -41,7 +55,7 @@ except NameError:
     try:
         import argparse
     except:
-        print "argparse required. Try `pip install argparse`."
+        print("argparse required. Try `pip install argparse`.")
         sys.exit(1)
         
 # silence Python 2.6 buggy warnings about Exception.message
@@ -155,7 +169,7 @@ def format_phone(phone):
         phone = "(%s) %s-%s" % (ph[-10:-7], ph[-7:-4], ph[-4:])
     elif len(ph) == 11 and ph[0] =='1':
         phone = "(%s) %s-%s" % (ph[-10:-7], ph[-7:-4], ph[-4:])
-    return phone.decode('utf-8')
+    return decode_str(phone)
 
 def format_address(address):
     """If address is email, leave alone.  Otherwise, call format_phone()."""
@@ -216,7 +230,7 @@ def validate(args):
         validate_aliases(args.aliases)
         validate_numbers(args.numbers)
     except ValueError as err:
-        print err, '\n'
+        print(err, '\n')
         raise
 
 def find_sms_db():
@@ -282,7 +296,7 @@ def alias_map(aliases):
             m2 = re.search('@', key)
             if not m2:
                 key = trunc(key) 
-            amap[key] = alias.decode('utf-8')
+            amap[key] = decode_str(alias)
     return amap
 
 def build_msg_query(numbers, emails):
@@ -365,7 +379,7 @@ def convert_date(unix_date, format):
     """Convert unix epoch time string to formatted date string."""
     dt = datetime.fromtimestamp(int(unix_date))
     ds = dt.strftime(format)
-    return ds.decode('utf-8')
+    return decode_str(ds)
 
 def convert_address_imessage(row, me, alias_map):
     """
@@ -385,7 +399,7 @@ def convert_address_imessage(row, me, alias_map):
     outgoing_flags = (36869, 102405)
     
     if isinstance(me, str): 
-        me = me.decode('utf-8')
+        me = decode_str(me)
         
     # If madrid_handle is phone number, have to truncate it.
     email_match = re.search('@', row['madrid_handle'])
@@ -423,7 +437,7 @@ def convert_address_sms(row, me, alias_map):
         3 = 'outgoing'
     """
     if isinstance(me, str): 
-        me = me.decode('utf-8')
+        me = decode_str(me)
     
     tr_address = trunc(row['address'])
     if tr_address in alias_map:
@@ -541,13 +555,19 @@ def msgs_human(messages, header):
     
         msgs = []
         if header:
-            htemplate = u"{0:{1}} | {2:{3}} | {4:{5}} | {6}"
+            if py25:
+                htemplate = "{0:{1}} | {2:{3}} | {4:{5}} | {6}".decode('utf8')
+            else:
+                htemplate = "{0:{1}} | {2:{3}} | {4:{5}} | {6}"
             hrow = htemplate.format('Date', date_width, 'From', from_width, 
                                    'To', to_width, 'Text')
             msgs.append(hrow)
         for m in messages:
             text = m['text'].replace("\n","\n" + " " * headers_width)
-            template = u"{0:{1}} | {2:>{3}} | {4:>{5}} | {6}"
+            if py25:
+                template = "{0:{1}} | {2:>{3}} | {4:>{5}} | {6}".decode('utf8')
+            else:
+                template = "{0:{1}} | {2:>{3}} | {4:>{5}} | {6}"
             msg = template.format(m['date'], date_width, m['from'], from_width, 
                                   m['to'], to_width, text)
             msgs.append(msg)
