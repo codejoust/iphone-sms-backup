@@ -26,10 +26,10 @@ py3k = py >= (3,0,0)
 py25 = py <  (2,6,0)
 
 if py3k:
-  bytes = str
+  unicode = str
   import io
 else:
-  unicode = str
+  bytes = str
   import cStringIO
 
 import csv
@@ -45,7 +45,13 @@ import tempfile
 
 from datetime import datetime
 
-def decode_str(s):
+def encode_str(s,enc='utf8'):
+    if py3k:
+        return s
+    else:
+        return s.encode(enc)# if isinstance(s, unicode) else bytes(s)
+
+def decode_str(s, enc='utf8', err='strict'):
     return s.decode(enc, err) if isinstance(s, bytes) else unicode(s)
 
 # argparse isn't in standard library until 2.7
@@ -572,7 +578,7 @@ def msgs_human(messages, header):
                                   m['to'], to_width, text)
             msgs.append(msg)
         msgs.append('')
-        output = '\n'.join(msgs).encode('utf-8')
+        output = encode_str('\n'.join(msgs))
     return output
 
 def msgs_csv(messages, header):
@@ -582,10 +588,10 @@ def msgs_csv(messages, header):
     if header:
         writer.writerow(['Date', 'From', 'To', 'Text'])
     for m in messages:
-        writer.writerow([m['date'].encode('utf-8'),
-                         m['from'].encode('utf-8'),
-                         m['to'].encode('utf-8'),
-                         m['text'].encode('utf-8')])
+        writer.writerow([encode_str(m['date']),
+                         encode_str(m['from']),
+                         encode_str(m['to']),
+                         encode_str(m['text'])])
     output = queue.getvalue()
     queue.close()
     return output
@@ -593,7 +599,7 @@ def msgs_csv(messages, header):
 def msgs_json(messages, header=False):
     """Return messages in JSON format"""
     output = json.dumps(messages, sort_keys=True, indent=2, ensure_ascii=False)
-    return output.encode('utf-8')
+    return encode_str(output)
 
 def output(messages, out_file, format, header):
     """Output messages to out_file in format."""
