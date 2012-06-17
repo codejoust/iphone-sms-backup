@@ -561,19 +561,13 @@ def msgs_human(messages, header):
     
         msgs = []
         if header:
-            if py25:
-                htemplate = "{0:{1}} | {2:{3}} | {4:{5}} | {6}".decode('utf8')
-            else:
-                htemplate = "{0:{1}} | {2:{3}} | {4:{5}} | {6}"
+            htemplate = "{0:{1}} | {2:{3}} | {4:{5}} | {6}".decode('utf8')
             hrow = htemplate.format('Date', date_width, 'From', from_width, 
                                    'To', to_width, 'Text')
             msgs.append(hrow)
         for m in messages:
             text = m['text'].replace("\n","\n" + " " * headers_width)
-            if py25:
-                template = "{0:{1}} | {2:>{3}} | {4:>{5}} | {6}".decode('utf8')
-            else:
-                template = "{0:{1}} | {2:>{3}} | {4:>{5}} | {6}"
+            template = "{0:{1}} | {2:>{3}} | {4:>{5}} | {6}".decode('utf8')
             msg = template.format(m['date'], date_width, m['from'], from_width, 
                                   m['to'], to_width, text)
             msgs.append(msg)
